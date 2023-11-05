@@ -2,6 +2,16 @@
 
 <?php ob_start(); ?>
 
+<?php
+	function Color($user) {
+		if (!empty($_SESSION['user']) && $_SESSION['user']['nom'] === $user) {
+			echo 'secondary';
+		}else {
+			echo 'primary';
+		}
+	}
+?>
+
 <div class="row gap-3 mb-3">
 	<form class="col-sm d-flex justify-content-center" action="index.php?action=Connecter" method="POST">
 		<input type="hidden" name="user" value="admin">
@@ -21,17 +31,6 @@
 		</button>
 	</form>
 </div>
-
-<?php
-	function Color($user) {
-		DemarrerSession();
-		if (!empty($_SESSION['user']) && $_SESSION['user'] === $user) {
-			echo 'secondary';
-		}else {
-			echo 'primary';
-		}
-	}
-?>
 
 <?php $contenu = ob_get_clean(); ?>
 

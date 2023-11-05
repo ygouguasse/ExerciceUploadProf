@@ -20,6 +20,7 @@ function AfficherErreurUpload()
 		'FichierVide' => 'Image vide.',
 		'FichierTropGros' => 'Image trop volumineuse.',
 		'TypeFichierNonAuthorise' => 'Type de fichier non authorisé. Veuillez choisir une image de type PNG ou JPEG/JPG.',
+		'PasConnecte' => 'Vous devez vous connecter pour pouvoir téléverser une image.',
 		'erreur' => 'Une erreur s\'est produite lors du téléversement de l\'image.'
 	];
 
@@ -40,12 +41,19 @@ function AfficherErreurUpload()
 ?>
 
 <?php AfficherMessageSucces(); ?>
+<?php AfficherErreurUpload(); ?>
 
 <form action="index.php?action=AjoutImageFormulaire" class="needs-validation" method="POST" enctype="multipart/form-data" novalidate>
 	<div class="mb-3">
 		<label for="image" class="form-label">Choisissez une image</label>
 		<input class="form-control" type="file" id="image" name="image" accept="image/png, image/jpeg" required>
 		<div class="invalid-feedback">Veuillez choisir une image de type PNG ou JPEG/JPG</div>
+	</div>
+
+	<div class="mb-3">
+		<label for="description" class="form-label">Description</label>
+		<textarea class="form-control" id="description" name="description" required></textarea>
+		<div class="invalid-feedback">Veuillez saisir une description</div>
 	</div>
 
 	<button type="submit" class="btn btn-primary">Soumettre</button>

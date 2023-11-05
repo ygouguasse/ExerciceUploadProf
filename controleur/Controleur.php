@@ -1,6 +1,8 @@
 <?php
 
 require 'modele/ModeleFichier.php';
+require 'modele/ModeleUtilisateur.php';
+require 'modele/ModelePermissionFichierUtilisateur.php';
 
 function DemarrerSession()
 {
@@ -31,31 +33,53 @@ function AfficherPageAjaxUpload()
 
 function AfficherPageImages()
 {
-	$requeteFichiers = ModeleFichier::ObtenirFichiers();
+	DemarrerSession();
+	$images = [];
+	if (!empty($_SESSION['user'])) {
+		$requeteFichiers = ModeleFichier::ObtenirFichiers($_SESSION['user']['id']);
+		$images = $requeteFichiers->fetchAll();
+		$requeteFichiers->closeCursor();
+	}
 	require 'vue/Images.php';
 }
 
 function AjoutImageFormulaire()
 {
 	$resultatAjout = AjoutImage();
+	
+	$statusCode = 200; // OK
+	$redirect = 'location: index.php?action=FormulaireUpload';
 
 	if (!empty($resultatAjout['erreur'])) {
-		header('location: index.php?action=FormulaireUpload&erreur=' . $resultatAjout['erreur']);
-		return;
+		$statusCode = 400; // Bad Request
+		if ($resultatAjout['erreur'] === 'PasConnecte') {
+			$statusCode = 401; // Unauthorized
+		}
+		$redirect .= '&erreur=' . $resultatAjout['erreur'];
 	}
 
-	header('location: index.php?action=FormulaireUpload&succes=' . $resultatAjout['succes']);
+	if (!empty($resultatAjout['succes'])) {
+		$redirect .= '&succes=' . $resultatAjout['succes'];
+	}
+
+	http_response_code($statusCode);
+	header($redirect);
 }
 
 function AjoutImageAjax()
 {
 	header('Content-Type: application/json; charset=utf-8');
 	$resultatAjout = AjoutImage();
+	$statusCode = 200; // OK
 
 	if (!empty($resultatAjout['erreur'])) {
-		http_response_code(400);
+		$statusCode = 400; // Bad Request
+		if ($resultatAjout['erreur'] === 'PasConnecte') {
+			$statusCode = 401; // Unauthorized
+		}
 	}
 
+	http_response_code($statusCode);
 	echo json_encode($resultatAjout);
 }
 
@@ -67,7 +91,7 @@ function AjoutImage()
 		'image/jpeg' => 'jpg'
 	];
 
-	$infosValidation = ValiderFichier('image', $tailleMaximale, $typesAuthorises);
+	$infosValidation = ValiderFichier('image', 'description', $tailleMaximale, $typesAuthorises);
 	if (!empty($infosValidation['erreur'])) {
 		return $infosValidation;
 	}
@@ -86,7 +110,8 @@ function AjoutImage()
 	}
 
 	// On ajoute l'image à la base de données.
-	ModeleFichier::AjouterFichier($nom, $extension, basename($_FILES['image']['name']));
+	$fichierId = ModeleFichier::AjouterFichier($nom, $extension, $infosValidation['description']);
+	ModelePermissionFichierUtilisateur::AjouterPermission($infosValidation['user']['id'], $fichierId);
 
 	return [
 		'succes' => 'true',
@@ -110,18 +135,29 @@ function ObtenirCheminFichierUnique($dossier, $extension)
 	];
 }
 
-function ValiderFichier($name, $tailleMaximale, $typesAuthorises)
+function ValiderFichier($nomChampFichier, $nomChampDescription, $tailleMaximale, $typesAuthorises)
 {
+	// On doit être connecté pour pouvoir ajouter un fichier.
+	DemarrerSession();
+	if (empty($_SESSION['user'])) {
+		return ['erreur' => 'PasConnecte'];
+	}
+
 	// On regarde si on a reçu un fichier.
-	// $name est le name de l'input de type file.
-	if (!isset($_FILES[$name])) {
+	// $nomChampFichier est le name de l'input de type file.
+	if (!isset($_FILES[$nomChampFichier])) {
 		return ['erreur' => 'PasDeFichier'];
+	}
+
+	// On regarde si on a reçu une description.
+	if (!isset($_POST[$nomChampDescription])) {
+		return ['erreur' => 'PasDeDescription'];
 	}
 
 	// Lorsque PHP reçoit un fichier, il le place dans un dossier
 	// temporaire avec un nom autogénéré.
-	// $_FILES[$name]['tmp_name'] permet de récupérer le chemin d'accès à ce fichier.
-	$cheminFichier = $_FILES[$name]['tmp_name'];
+	// $_FILES[$nomChampFichier]['tmp_name'] permet de récupérer le chemin d'accès à ce fichier.
+	$cheminFichier = $_FILES[$nomChampFichier]['tmp_name'];
 	// Pour des raisons de sécurité, nous ne pouvons pas obtenir
 	// la taille ou le type du fichier en utilisant $_FILES.
 	$tailleFichier = filesize($cheminFichier);
@@ -141,7 +177,9 @@ function ValiderFichier($name, $tailleMaximale, $typesAuthorises)
 	}
 
 	return [
-		'extension' => $typesAuthorises[$typeFichier]
+		'extension' => $typesAuthorises[$typeFichier],
+		'description' => $_POST[$nomChampDescription],
+		'user' => $_SESSION['user'],
 	];
 }
 
@@ -152,9 +190,13 @@ function ObtenirImage()
 		return;
 	}
 
-	$requeteImage = ModeleFichier::ObtenirFichier($_GET['image']);
-	$imageInfos = $requeteImage->fetch();
-	$requeteImage->closeCursor();
+	DemarrerSession();
+	$imageInfos = [];
+	if (!empty($_SESSION['user'])) {
+		$requeteFichier = ModeleFichier::ObtenirFichier($_GET['image'], $_SESSION['user']['id']);
+		$imageInfos = $requeteFichier->fetch();
+		$requeteFichier->closeCursor();
+	}
 
 	if (!$imageInfos) {
 		http_response_code(404);
@@ -176,20 +218,29 @@ function ObtenirImage()
 
 function AfficherPageConnexion()
 {
+	DemarrerSession();
 	require 'vue/Connexion.php';
 }
 
 function Connecter()
 {
+	header('location: index.php?action=Connexion');
+
 	if (empty($_POST['user'])) {
 		http_response_code(400);
 		return;
 	}
 
 	DemarrerSession();
-	$_SESSION['user'] = $_POST['user'];
+	$requeteUtilisateur = ModeleUtilisateur::ObtenirUtilisateur($_POST['user']);
+	$utilisateur = $requeteUtilisateur->fetch();
+	$requeteUtilisateur->closeCursor();
+	if (!$utilisateur) {
+		http_response_code(401);
+		return;
+	}
 
-	header('location: index.php?action=Connexion');
+	$_SESSION['user'] = $utilisateur;
 }
 
 function Deconnecter()

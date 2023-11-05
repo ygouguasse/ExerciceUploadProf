@@ -9,7 +9,8 @@ async function GereSoumissionFormulaire(event) {
 	// On remplace la soumission par défaut
 	event.preventDefault();
 	const formulaire = event.currentTarget;
-	const imageInput = formulaire.querySelector("#image");
+	const champImage = formulaire.querySelector("#image");
+	const champDesctiption = formulaire.querySelector("#description");
 
 	RetirerMessage();
 
@@ -21,7 +22,8 @@ async function GereSoumissionFormulaire(event) {
 	// tout dépendamment de ce qui est utilisé.
 	const data = new FormData();
 	// On récupère le fichier de l'image sélectionné.
-	data.append('image', imageInput.files[0]);
+	data.append('image', champImage.files[0]);
+	data.append('description', champDesctiption.value);
 	// Si on avait d'autres champs, on pourrait les ajouter.
 	// data.append('utilisateur', formulaire.querySelector('#utilisateur').value);
 	// data.append('mot_de_passe', formulaire.querySelector('#mot_de_passe').value);
@@ -62,6 +64,7 @@ function AfficherMessageErreur(erreur) {
 		'PasDeFichier': 'Aucune image reçue.',
 		'FichierVide': 'Image vide.',
 		'FichierTropGros': 'Image trop volumineuse.',
+		'PasConnecte' : 'Vous devez vous connecter pour pouvoir téléverser une image.',
 		'TypeFichierNonAuthorise': 'Type de fichier non authorisé. Veuillez choisir une image de type PNG ou JPEG/JPG.',
 	};
 	let message = "Une erreur s'est produite lors du téléversement de l'image.";

@@ -12,6 +12,12 @@
 		<div class="invalid-feedback">Veuillez choisir une image de type PNG ou JPEG/JPG</div>
 	</div>
 
+	<div class="mb-3">
+		<label for="description" class="form-label">Description</label>
+		<textarea class="form-control" id="description" name="description" required></textarea>
+		<div class="invalid-feedback">Veuillez saisir une description</div>
+	</div>
+
 	<button type="submit" class="btn btn-primary">Soumettre</button>
 </form>
 

@@ -21,10 +21,10 @@ DROP TABLE IF EXISTS `permissions_fichiers_utilisateurs`;
 CREATE TABLE `permissions_fichiers_utilisateurs` (
     `id` int NOT NULL AUTO_INCREMENT,
     `utilisateur` int NOT NULL,
-    `image` int NOT NULL,
+    `fichier` int NOT NULL,
     PRIMARY KEY (`id`),
     CONSTRAINT `fk_permissions_fichiers_utilisateurs_utilisateurs` FOREIGN KEY (`utilisateur`) REFERENCES `utilisateurs` (`id`),
-    CONSTRAINT `fk_permissions_fichiers_utilisateurs_fichiers` FOREIGN KEY (`image`) REFERENCES `fichiers` (`id`)
+    CONSTRAINT `fk_permissions_fichiers_utilisateurs_fichiers` FOREIGN KEY (`fichier`) REFERENCES `fichiers` (`id`)
 ) ENGINE=InnoDB;
 
 INSERT INTO `fichiers` (`id`, `nom`, `extension`, `description`) VALUES
@@ -35,7 +35,7 @@ INSERT INTO `utilisateurs` (`id`, `nom`) VALUES
 (1, 'admin'),
 (2, 'user');
 
-INSERT INTO `permissions_fichiers_utilisateurs` (`id`, `utilisateur`, `image`) VALUES
+INSERT INTO `permissions_fichiers_utilisateurs` (`id`, `utilisateur`, `fichier`) VALUES
 (1, 1, 1),
 (2, 1, 2),
 (3, 2, 1);
